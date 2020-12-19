@@ -6,10 +6,16 @@ using UnityEngine.UI;
 
 public class InventoryBehavior : MonoBehaviour
 {
-    // Gets the canvas for the inventory UI.
-    private GameObject inventoryArea;
+    // Gets the slots of the inventory.
+    [SerializeField]
+    private GameObject slotsArea;
+    [SerializeField]
+    private GameObject equipSlots;
     // Used for the different slots of the inventory.
     private List<GameObject> inventorySlots;
+    // Used to set the background images.
+    [SerializeField]
+    private GameObject backgroundArea;
     // An instance of the player's inventory.
     [HideInInspector]
     public InventoryItems playerInventory;
@@ -23,7 +29,11 @@ public class InventoryBehavior : MonoBehaviour
     [SerializeField]
     private Sprite defaultSprite;
     // The weapon and armor inventory slots.
+    [SerializeField]
     private GameObject weaponSlot, armorSlot;
+    // The weapon and armor images.
+    [SerializeField]
+    private GameObject weaponSlotImage, armorSlotImage;
     // Used for keeping track of if an item was just moved.
     private bool justMovedItem = false;
     // Used to set the amount of slots the inventory has.
@@ -32,36 +42,21 @@ public class InventoryBehavior : MonoBehaviour
 
     void Start()
     {
-        // Gets the inventory's canvas.
-        inventoryArea = GameObject.Find("Slots");
-        // Initializes inventory slots.
-        inventorySlots = new List<GameObject>();
-
         // Sets the inventory slots to the slots on the canvas.
-        foreach(Transform child in inventoryArea.transform)
+        inventorySlots = new List<GameObject>();
+        foreach (Transform child in slotsArea.transform)
         {
-            amountOfSlots++;
             inventorySlots.Add(child.gameObject);
+            amountOfSlots++;
         }
 
-        // Gets the weapon and the armor slot for later use.
-        int iterator = 0;
-        foreach(Transform child in GameObject.Find("Equipped").transform)
+        foreach(Transform image in backgroundArea.transform)
         {
-            if(iterator == 0)
-            {
-                weaponSlot = child.gameObject;
-            }
-            if(iterator == 1)
-            {
-                armorSlot = child.gameObject;
-            }
-            iterator++;
+            image.gameObject.GetComponent<Image>().sprite = defaultSprite;
         }
 
-        // Sets the weapon and the armor slot to the default sprites.
-        weaponSlot.GetComponent<Image>().sprite = defaultSprite;
-        armorSlot.GetComponent<Image>().sprite = defaultSprite;
+        weaponSlotImage.gameObject.GetComponent<Image>().sprite = defaultSprite;
+        armorSlotImage.gameObject.GetComponent<Image>().sprite = defaultSprite;
 
         // Sets that the inventory needs to be updated.
         needToUpdateInventoryUI = true;
@@ -168,10 +163,8 @@ public class InventoryBehavior : MonoBehaviour
         // If the slot is an integer.
         if(Int32.TryParse(slot, out int index))
         {
-            if(playerInventory.GetInventoryItems()[index] == null)
-            {
+            if(!playerInventory.GetInventoryItems()[index])
                 return;
-            }
 
             // Set the item of the mouse to the item in the player's inventory of that index and the stack of the item onto the mouse.
             itemOnMouse = playerInventory.GetInventoryItems()[index];
@@ -194,6 +187,9 @@ public class InventoryBehavior : MonoBehaviour
         // If the slot is the weapon slot.
         if (slot == "Weapon")
         {
+            if (weaponSlot == null)
+                return;
+
             //Attach the item in the weapon slot to the mouse and set the stack to one.
             itemOnMouse = playerInventory.EquippedWeapon;
             stackOnMouse = 1;
@@ -210,6 +206,9 @@ public class InventoryBehavior : MonoBehaviour
         // If the slot is the armor slot.
         if (slot == "Armor")
         {
+            if (armorSlot == null)
+                return;
+
             //Attach the item in the armor slot to the mouse and set the stack to one.
             itemOnMouse = playerInventory.EquippedArmor;
             stackOnMouse = 1;
@@ -260,6 +259,17 @@ public class InventoryBehavior : MonoBehaviour
             }
             else
             {
+                if(itemOnMouse == playerInventory.GetInventoryItems()[slotIndex])
+                {
+                    playerInventory.GetItemStacks()[slotIndex]++;
+                    itemOnMouse = null;
+                    stackOnMouse = 0;
+                    Cursor.SetCursor(null, Vector2.zero, CursorMode.Auto);
+                    justMovedItem = true;
+                    needToUpdateInventoryUI = true;
+                    return;
+                }
+
                 // Get the item in the slot.
                 ItemInSlot itemsInSlot = inventorySlots[slotIndex].GetComponent<ItemInSlot>();
 
